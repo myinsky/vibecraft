@@ -1,0 +1,1 @@
+ALTER TABLE `legal_pages` MODIFY COLUMN `content` text NOT NULL;

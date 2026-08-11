@@ -1,0 +1,1 @@
+ALTER TABLE `posts` ADD `disableAds` boolean DEFAULT false NOT NULL;

@@ -1,0 +1,1 @@
+ALTER TABLE `posts` ADD `showInSection` boolean DEFAULT true NOT NULL;

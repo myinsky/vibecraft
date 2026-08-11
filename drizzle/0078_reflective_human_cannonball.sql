@@ -1,0 +1,1 @@
+ALTER TABLE `vibe_apps` ADD `appUrl` varchar(500);

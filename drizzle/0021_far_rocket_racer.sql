@@ -1,0 +1,1 @@
+ALTER TABLE `nav_items` ADD `displayRows` int DEFAULT 1 NOT NULL;

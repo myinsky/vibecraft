@@ -1,0 +1,1 @@
+ALTER TABLE `posts` ADD `embedWidth` enum('content','full') DEFAULT 'content' NOT NULL;

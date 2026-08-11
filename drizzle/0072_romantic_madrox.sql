@@ -1,0 +1,1 @@
+ALTER TABLE `sidebar_items` MODIFY COLUMN `menuStyle` enum('default','button','pill','underline','card','indent','neon','glass','floating','bold-border') DEFAULT 'default';

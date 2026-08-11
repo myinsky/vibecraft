@@ -1,0 +1,1 @@
+ALTER TABLE `nav_items` ADD `thumbSize` enum('sm','md','lg') DEFAULT 'md' NOT NULL;

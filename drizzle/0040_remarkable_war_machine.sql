@@ -1,0 +1,1 @@
+ALTER TABLE `custom_pages` ADD `viewCount` int DEFAULT 0 NOT NULL;

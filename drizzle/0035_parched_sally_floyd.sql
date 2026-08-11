@@ -1,0 +1,1 @@
+ALTER TABLE `custom_pages` ADD `hideSidebar` boolean DEFAULT false NOT NULL;

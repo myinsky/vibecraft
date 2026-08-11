@@ -1,0 +1,1 @@
+ALTER TABLE `sidebar_items` MODIFY COLUMN `title` varchar(100) NOT NULL DEFAULT '';

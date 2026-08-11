@@ -1,0 +1,430 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* Tailwind v4 소스 범위 명시 - node_modules 제외하여 미사용 CSS 최소화 */
+@source "./**/*.{ts,tsx}";
+@source "../index.html";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+}
+
+/* ===== 라이트 테마 (기본) ===== */
+:root {
+  --radius: 0.5rem;
+
+  /* 배경: 순백 */
+  --background: oklch(1.0 0 0);
+  --foreground: oklch(0.15 0.01 260);
+
+  /* 카드: 아주 연한 회색 */
+  --card: oklch(0.98 0.003 260);
+  --card-foreground: oklch(0.15 0.01 260);
+
+  /* 팝오버 */
+  --popover: oklch(1.0 0 0);
+  --popover-foreground: oklch(0.15 0.01 260);
+
+  /* 주 색상: 보라-파랑 계열 (기존 브랜드 유지) */
+  --primary: oklch(0.55 0.22 264);
+  --primary-foreground: oklch(0.98 0 0);
+
+  /* 보조 색상: 연한 회색 */
+  --secondary: oklch(0.94 0.005 260);
+  --secondary-foreground: oklch(0.25 0.01 260);
+
+  /* 음소거 */
+  --muted: oklch(0.95 0.004 260);
+  --muted-foreground: oklch(0.50 0.01 260);
+
+  /* 강조 */
+  --accent: oklch(0.93 0.02 264);
+  --accent-foreground: oklch(0.35 0.15 264);
+
+  /* 위험 */
+  --destructive: oklch(0.55 0.22 25);
+  --destructive-foreground: oklch(0.98 0 0);
+
+  /* 테두리/입력 */
+  --border: oklch(0.88 0.006 260);
+  --input: oklch(0.88 0.006 260);
+  --ring: oklch(0.55 0.22 264);
+
+  /* 사이드바 */
+  --sidebar: oklch(0.97 0.004 260);
+  --sidebar-foreground: oklch(0.25 0.01 260);
+}
+
+/* ===== 다크 테마 (선택적 지원) ===== */
+.dark {
+  --background: oklch(0.10 0.015 260);
+  --foreground: oklch(0.93 0.008 260);
+  --card: oklch(0.14 0.018 260);
+  --card-foreground: oklch(0.93 0.008 260);
+  --popover: oklch(0.14 0.018 260);
+  --popover-foreground: oklch(0.93 0.008 260);
+  --primary: oklch(0.65 0.22 264);
+  --primary-foreground: oklch(0.98 0 0);
+  --secondary: oklch(0.18 0.018 260);
+  --secondary-foreground: oklch(0.80 0.010 260);
+  --muted: oklch(0.18 0.012 260);
+  --muted-foreground: oklch(0.58 0.015 260);
+  --accent: oklch(0.65 0.22 264);
+  --accent-foreground: oklch(0.98 0 0);
+  --destructive: oklch(0.62 0.22 25);
+  --destructive-foreground: oklch(0.98 0 0);
+  --border: oklch(0.22 0.015 260);
+  --input: oklch(0.22 0.015 260);
+  --ring: oklch(0.65 0.22 264);
+  --sidebar: oklch(0.12 0.016 260);
+  --sidebar-foreground: oklch(0.80 0.010 260);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    /* 시스템 폰트 우선 적용: 구글 폰트 로드 전 레이아웃 이동(CLS) 방지 */
+    /* Noto Sans KR은 폰트 로드 완료 후 적용됨 (display=optional) */
+    font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  }
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  a[href] {
+    @apply cursor-pointer;
+  }
+}
+
+@layer components {
+  .container {
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  .flex {
+    min-height: 0;
+    min-width: 0;
+  }
+  @media (min-width: 640px) {
+    .container { padding-left: 1.5rem; padding-right: 1.5rem; }
+  }
+  @media (min-width: 1024px) {
+    .container { padding-left: 2rem; padding-right: 2rem; max-width: 1400px; }
+  }
+}
+
+/* ─── 본문 폭 강제 제한 (postContentWidth 최우선) ─── */
+/* html-source-content 내 블록 요소의 폭이 컨테이너를 벗어나지 않도록 강제 */
+/* 단, 원형/번호 요소(width=height인 고정 크기 요소)와 표 셀은 예외 처리 */
+
+/* 최상위 직계 자식 중 div/section/article/p/ul/ol 등 블록 요소만 제한 */
+.html-source-content > div,
+.html-source-content > section,
+.html-source-content > article,
+.html-source-content > p,
+.html-source-content > ul,
+.html-source-content > ol,
+.html-source-content > figure,
+.html-source-content > blockquote {
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* img, pre, iframe, video 폭 제한 */
+.html-source-content img,
+.html-source-content pre,
+.html-source-content iframe,
+.html-source-content video {
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* 표 전체는 100% 제한하되, 셀(td/th)은 내부 레이아웃 유지 */
+/* max-width !important 제거: HTML 원본 <style> 태그의 table width 스타일 보존 */
+.html-source-content table {
+  max-width: 100%;
+  box-sizing: border-box;
+  table-layout: auto;
+  overflow-x: auto;
+}
+/* 인라인 스타일 없는 table에만 기본 border-collapse 적용 */
+.html-source-content table:not([style]) {
+  border-collapse: collapse;
+  width: 100%;
+}
+/* thead/tbody/tr: 원본 background/color/border 보존 - 어떤 강제 스타일도 적용하지 않음 */
+.html-source-content thead,
+.html-source-content tbody,
+.html-source-content tfoot,
+.html-source-content tr {
+  box-sizing: border-box;
+}
+
+/* 원형 번호 요소 (width와 height가 같은 고정 크기 span/div) - max-width 예외 */
+/* border-radius: 50% 또는 border-radius: 9999px 인 요소는 max-width 해제 */
+.html-source-content [style*="border-radius: 50%"],
+.html-source-content [style*="border-radius:50%"],
+.html-source-content [style*="border-radius: 9999px"],
+.html-source-content [style*="border-radius:9999px"] {
+  max-width: none !important;
+  flex-shrink: 0 !important;
+}
+
+/* 인라인 style로 지정된 width/max-width도 컨테이너 초과 금지 (원형 요소 제외) */
+.html-source-content [style*="width"]:not([style*="border-radius: 50%"]):not([style*="border-radius:50%"]):not([style*="border-radius: 9999px"]):not([style*="border-radius:9999px"]):not(td):not(th) {
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* rich-preview 내부도 동일하게 적용 */
+.rich-preview > div,
+.rich-preview > section,
+.rich-preview > p,
+.rich-preview > ul,
+.rich-preview > ol,
+.rich-preview > figure,
+.rich-preview > blockquote {
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+.rich-preview img,
+.rich-preview pre,
+.rich-preview iframe {
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+.rich-preview table {
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  table-layout: auto;
+}
+.rich-preview [style*="border-radius: 50%"],
+.rich-preview [style*="border-radius:50%"],
+.rich-preview [style*="border-radius: 9999px"],
+.rich-preview [style*="border-radius:9999px"] {
+  max-width: none !important;
+  flex-shrink: 0 !important;
+}
+
+/* ─── 표 셀 패딩 보호 ─── */
+/* html-source-content 내 td/th: 원본 background/color/border/padding 보존 */
+/* 원본 스타일을 덮어쓰는 속성 일체 제거 */
+.html-source-content td,
+.html-source-content th {
+  box-sizing: border-box;
+  max-width: none;
+}
+/* 인라인 스타일 없는 셀에만 기본 패딩 적용 (원본 스타일 있는 경우 덮어쓰지 않음) */
+.html-source-content td:not([style]),
+.html-source-content th:not([style]) {
+  padding: 8px 12px;
+  min-width: 60px;
+  word-break: break-word;
+  white-space: normal;
+}
+
+/* ─── 원형 번호 클래스 기반 예외 ─── */
+/* .step-num, .toc-num, .num, .circle-num 등 원형 번호 클래스 */
+.html-source-content .step-num,
+.html-source-content .toc-num,
+.html-source-content .num,
+.html-source-content .circle-num,
+.html-source-content .circle,
+.html-source-content .number-badge,
+.html-source-content .plugin-num,
+.html-source-content .badge-num,
+.rich-preview .step-num,
+.rich-preview .toc-num,
+.rich-preview .num,
+.rich-preview .circle-num,
+.rich-preview .circle,
+.rich-preview .number-badge,
+.rich-preview .plugin-num,
+.rich-preview .badge-num {
+  max-width: none !important;
+  width: revert !important;
+  height: revert !important;
+  flex-shrink: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* ─── 동영상 임베드 반응형 스타일 ─── */
+/* [data-video-embed] 컨테이너: 16:9 비율 유지 */
+.rich-preview [data-video-embed],
+.html-source-content [data-video-embed] {
+  width: 100%;
+  max-width: 100%;
+  margin: 1em auto;
+}
+.rich-preview [data-video-embed] > div,
+.html-source-content [data-video-embed] > div {
+  position: relative;
+  padding-bottom: 56.25%;
+  height: 0;
+  overflow: hidden;
+}
+.rich-preview [data-video-embed] iframe,
+.html-source-content [data-video-embed] iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+  max-width: none !important;
+}
+.rich-preview [data-video-embed] figcaption,
+.html-source-content [data-video-embed] figcaption {
+  text-align: center;
+  font-size: 0.875em;
+  color: #6b7280;
+  margin-top: 6px;
+}
+
+/* ─── 애드센스 광고 블록 스타일 ─────────────────────────────────────────────── */
+.adsense-block {
+  margin: 28px auto;
+  text-align: center;
+  clear: both;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+/* 모바일: 연속 광고 방지 - 두 번째 이후 광고는 첫 번째 광고와 최소 간격 확보 */
+@media (max-width: 768px) {
+  .adsense-block + .adsense-block {
+    display: none;
+  }
+}
+
+/* ─── 모바일 터치 Ripple 효과 ──────────────────────────────────────────────── */
+@keyframes ripple-expand {
+  0% {
+    transform: scale(0);
+    opacity: 0.18;
+  }
+  60% {
+    opacity: 0.12;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
+/* touch-action: manipulation → 300ms 딜레이 제거, 더블탭 줌 방지 */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+a[href] {
+  touch-action: manipulation;
+}
+
+/* Ripple wave 요소 스타일 */
+.ripple-wave {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  background: currentColor;
+  opacity: 0.18;
+  transform: scale(0);
+  animation: ripple-expand 550ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  z-index: 0;
+}
+
+/* ─── 스켈레톤 shimmer 애니메이션 ─── */
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ─── VibeCodingSection 레이아웃 (동적 주입 제거 → 정적 CSS로 이동) ─── */
+.vibe-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: stretch;
+}
+.vibe-small-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 16px;
+}
+.vibe-small-card-img {
+  height: 130px;
+}
+@media (max-width: 900px) {
+  .vibe-layout { grid-template-columns: 1fr; }
+  .vibe-small-grid { grid-template-columns: 1fr 1fr; grid-template-rows: auto; }
+  .vibe-featured-card { height: auto; }
+  .vibe-small-card-img { height: 160px; }
+}
+@media (max-width: 480px) {
+  .vibe-layout { grid-template-columns: 1fr; gap: 12px; }
+  .vibe-small-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .vibe-small-card { flex-direction: column; height: auto; }
+  .vibe-small-card-img { width: 100% !important; max-width: 100% !important; height: 110px !important; flex-shrink: 0; }
+  .vibe-small-card > div:last-child { padding: 8px 10px; }
+  /* 피처드 카드 이미지 높이 모바일 축소 */
+  .vibe-featured-card-img { height: 200px !important; }
+}
+
+/* ─── 모바일 반응형: 최신글/리스트/오버레이 섹션 그리드 ─── */
+@media (max-width: 640px) {
+  /* LatestSection 3열 → 2열 */
+  .latest-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
+  .latest-card-img { height: 110px !important; }
+  .latest-card-title { font-size: 14px !important; }
+  /* ListSection 3열 → 1열 */
+  .list-section-grid { grid-template-columns: 1fr !important; gap: 8px !important; }
+  /* List2Section 2열 → 1열 */
+  .list2-section-grid { grid-template-columns: 1fr !important; gap: 8px !important; }
+  /* OverlaySection 3열 → 1열 */
+  .overlay-section-grid { grid-template-columns: 1fr !important; gap: 10px !important; }
+  .overlay-card { height: 200px !important; }
+  /* DownloadGridSection 3열 → 2열 */
+  .download-grid-section { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
+}
+
+/* ─── Dialog/Modal 열릴 때 margin-right 대신 padding-right로 보상하여 레이아웃 밀림 방지 ──
+   react-remove-scroll-bar는 Dialog 오픈 시 body[data-scroll-locked]에
+   margin-right: {scrollbarWidth}px !important를 주입하여 전체 레이아웃을 오른쪽으로 밀림.
+   margin-right를 0으로 덮어쓰고 padding-right로 대체하면 스크롤바 공간은 보상하면서
+   레이아웃 밀림이 없음. (var(--removed-bar-size)는 스크롤바 너비 CSS 변수)
+────────────────────────────────────────────────────────────────────────────── */
+body[data-scroll-locked] {
+  margin-right: 0 !important;
+  padding-right: var(--removed-body-scroll-bar-size, 0px) !important;
+}

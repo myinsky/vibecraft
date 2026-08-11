@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+    <title>스마트 오토 가이드 - Smart Auto Guide + Vibe Coding</title>
+    <!-- SEO 기본 메타 태그 (useSEO 훅으로 페이지별 동적 갱신됨) -->
+    <meta name="description" content="AI 앱 만들기, 바이브 코딩, AI 툴 추천 블로그 - 코딩 없이 AI 자동화 앱을 만드는 방법을 공유합니다." />
+    <meta name="robots" content="index, follow" />
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="스마트 오토 가이드" />
+    <meta property="og:title" content="스마트 오토 가이드 - Smart Auto Guide + Vibe Coding" />
+    <meta property="og:description" content="AI 앱 만들기, 바이브 코딩, AI 툴 추천 블로그 - 코딩 없이 AI 자동화 앱을 만드는 방법을 공유합니다." />
+    <meta property="og:url" content="https://vibecraftx.com" />
+    <meta property="og:locale" content="ko_KR" />
+    <!-- Open Graph Image (게시물 상세 페이지에서는 useSEO 훅이 동적으로 갱신) -->
+    <meta property="og:image" content="/manus-storage/og-image-512_6486f54d.webp" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="스마트 오토 가이드 - Smart Auto Guide + Vibe Coding" />
+    <meta name="twitter:description" content="AI 앱 만들기, 바이브 코딩, AI 툴 추천 블로그 - 코딩 없이 AI 자동화 앱을 만드는 방법을 공유합니다." />
+    <meta name="twitter:image" content="/manus-storage/og-image-512_6486f54d.webp" />
+    <!-- 파비콘: 최적화된 소형 이미지 사용 (1.2MB 원본 → 1.7KB/4.5KB로 압축) -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/manus-storage/favicon-32_7be998d1.png" />
+    <link rel="icon" type="image/png" sizes="64x64" href="/manus-storage/favicon-64_1be5ed1d.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/manus-storage/favicon-180_4ef1f1ce.png" />
+    <!-- 네이버 서치어드바이저 소유권 확인 -->
+    <meta name="naver-site-verification" content="86b53139df7c92a2dfa295a731ba744e15bd5fdd" />
+    <!-- Bing Webmaster Tools 소유권 확인 -->
+    <meta name="msvalidate.01" content="CF51BB116F4EC8CB978BCDC96FD97A84" />
+    <!-- RSS 피드 자동 검색 (브라우저 및 RSS 리더가 피드를 자동으로 감지) -->
+    <link rel="alternate" type="application/rss+xml" title="스마트 오토 가이드 RSS 피드" href="https://vibecraftx.com/rss.xml" />
+    <!--
+      Critical CSS 인라인화 (FCP/Speed Index 개선)
+      - JS 번들 로드 전에 브라우저가 즉시 렌더링할 수 있는 최소 스타일
+      - CSS 변수(:root), body 기본 스타일, #root 레이아웃, 헤더 스켈레톤 포함
+      - Tailwind 유틸리티 클래스는 Vite 번들에서 처리 (중복 없음)
+    -->
+    <style>
+      /* ── CSS 변수 (라이트 테마 기본값) ── */
+      :root {
+        --radius: 0.5rem;
+        --background: oklch(1.0 0 0);
+        --foreground: oklch(0.15 0.01 260);
+        --card: oklch(0.98 0.003 260);
+        --card-foreground: oklch(0.15 0.01 260);
+        --primary: oklch(0.55 0.22 264);
+        --primary-foreground: oklch(0.98 0 0);
+        --secondary: oklch(0.94 0.005 260);
+        --secondary-foreground: oklch(0.25 0.01 260);
+        --muted: oklch(0.95 0.004 260);
+        --muted-foreground: oklch(0.50 0.01 260);
+        --border: oklch(0.88 0.006 260);
+        --ring: oklch(0.55 0.22 264);
+      }
+      /* ── body 기본 스타일 (FOUC 방지) ── */
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+      html { line-height: 1.5; -webkit-text-size-adjust: 100%; }
+      body {
+        background-color: #ffffff;
+        color: oklch(0.15 0.01 260);
+        font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        min-height: 100vh;
+      }
+      /* ── #root 레이아웃 (콘텐츠 영역 즉시 확보) ── */
+      #root {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+      /* ── 헤더 스켈레톤 (헤더 영역 즉시 확보 - CLS 방지) ── */
+      #app-header-skeleton {
+        height: 56px;
+        background: #ffffff;
+        border-bottom: 1px solid oklch(0.88 0.006 260);
+        display: flex;
+        align-items: center;
+        padding: 0 16px;
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        width: 100%;
+      }
+      /* ── 이미지 기본 스타일 (레이아웃 이동 방지) ── */
+      img { display: block; max-width: 100%; height: auto; }
+      /* ── 링크 기본 스타일 ── */
+      a { color: inherit; text-decoration: none; }
+      /* ── 스크롤바 숨김 유틸리티 ── */
+      .scrollbar-hide::-webkit-scrollbar { display: none; }
+      .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+    <!-- Google AdSense: 소유권 확인 + 광고 로더 (수익화 심사 중 - head에 위치 필수) -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7218702084406165" crossorigin="anonymous"></script>
+    <!-- 성능 최적화: DNS prefetch + preconnect -->
+    <!-- S3 스토리지 서버 preconnect (이미지/파일 로딩 속도 개선) -->
+    <link rel="preconnect" href="https://storage.googleapis.com" crossorigin />
+    <link rel="dns-prefetch" href="https://storage.googleapis.com" />
+    <!-- AdSense preconnect (광고 로딩 속도 개선) -->
+    <link rel="dns-prefetch" href="https://pagead2.googlesyndication.com" />
+    <link rel="dns-prefetch" href="https://googleads.g.doubleclick.net" />
+    <!-- 구글 폰트: 핵심 폰트만 즉시 로드 (FCP/LCP 개선) -->
+    <!-- 에디터 전용 폰트(Nanum, Black Han Sans 등)는 RichEditor 컴포넌트 마운트 시 동적 로드 -->
+    <!-- preconnect: DNS 조회 + TCP 핸드셰이크를 미리 완료하여 폰트 요청 지연 최소화 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+    <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
+    <!-- Noto Sans KR: wght@400;700만 로드 (variable font 범위 제한으로 크기 최소화) -->
+    <!-- display=optional: 폰트 로드 전 시스템 폰트로 즉시 렌더링, 폰트 교체 없음 (CLS 0) -->
+    <!-- display=swap 대신 optional을 사용하면 느린 연결에서 레이아웃 이동(CLS) 방지 -->
+    <link
+      rel="preload"
+      as="style"
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=optional"
+      onload="this.rel='stylesheet'"
+    />
+    <noscript>
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=optional" />
+    </noscript>
+  </head>
+  <body>
+    <!-- 앱 로딩 스피너: JS 번들 로드 전(콜드 스타트 대기 중)에 즉시 표시 -->
+    <!-- React가 마운트되면 #root에 콘텐츠가 채워지면서 자동으로 가려짐 -->
+    <div id="app-loading-screen" style="
+      position: fixed;
+      inset: 0;
+      background: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      pointer-events: none;
+      transition: opacity 0.4s ease;
+    ">
+      <!-- 로고 영역 -->
+      <div style="
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 28px;
+      ">
+        <div style="
+          width: 36px;
+          height: 36px;
+          border-radius: 8px;
+          background: linear-gradient(135deg, #6366f1, #8b5cf6);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        ">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="white" stroke="white" stroke-width="1" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <span style="
+          font-size: 17px;
+          font-weight: 700;
+          color: #111827;
+          font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', -apple-system, sans-serif;
+          letter-spacing: -0.3px;
+        ">스마트 오토 가이드</span>
+      </div>
+      <!-- 스피너 -->
+      <div style="
+        width: 36px;
+        height: 36px;
+        border: 3px solid #e5e7eb;
+        border-top-color: #6366f1;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      "></div>
+      <!-- 안내 문구 -->
+      <p style="
+        margin-top: 16px;
+        font-size: 13px;
+        color: #9ca3af;
+        font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', -apple-system, sans-serif;
+      ">잠시만 기다려 주세요...</p>
+    </div>
+    <style>
+      @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+    </style>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+    <!-- Umami Analytics: requestIdleCallback으로 지연 로드 (TBT 개선) -->
+    <!-- defer만으로는 HTML 파싱 완료 후 즉시 실행되어 TBT에 영향을 줄 수 있음 -->
+    <script>
+      (function() {
+        function loadUmami() {
+          var s = document.createElement('script');
+          s.defer = true;
+          s.src = '%VITE_ANALYTICS_ENDPOINT%/umami';
+          s.setAttribute('data-website-id', '%VITE_ANALYTICS_WEBSITE_ID%');
+          document.head.appendChild(s);
+        }
+        if ('requestIdleCallback' in window) {
+          requestIdleCallback(loadUmami, { timeout: 5000 });
+        } else {
+          window.addEventListener('load', function() { setTimeout(loadUmami, 1000); });
+        }
+      })();
+    </script>
+    <!-- Kakao JavaScript SDK: requestIdleCallback으로 지연 로드 (TBT 개선) -->
+    <script>
+      (function() {
+        function loadKakao() {
+          var s = document.createElement('script');
+          s.async = true;
+          s.src = '/api/kakao-sdk';
+          document.head.appendChild(s);
+        }
+        if ('requestIdleCallback' in window) {
+          requestIdleCallback(loadKakao, { timeout: 6000 });
+        } else {
+          window.addEventListener('load', function() { setTimeout(loadKakao, 2000); });
+        }
+      })();
+    </script>
+  </body>
+</html>

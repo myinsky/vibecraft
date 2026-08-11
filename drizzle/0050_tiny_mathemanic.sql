@@ -1,0 +1,1 @@
+ALTER TABLE `custom_pages` ADD `membersOnly` boolean DEFAULT false NOT NULL;

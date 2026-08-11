@@ -1,0 +1,1 @@
+ALTER TABLE `posts` ADD `allowComments` boolean DEFAULT true NOT NULL;

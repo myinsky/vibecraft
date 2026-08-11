@@ -1,0 +1,1 @@
+ALTER TABLE `custom_pages` MODIFY COLUMN `sectionsJson` mediumtext NOT NULL DEFAULT '[]';

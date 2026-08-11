@@ -1,0 +1,1 @@
+ALTER TABLE `backup_history` MODIFY COLUMN `countsJson` text NOT NULL;

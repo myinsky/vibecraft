@@ -1,0 +1,1 @@
+ALTER TABLE `posts` ADD `isAppMode` boolean DEFAULT false NOT NULL;

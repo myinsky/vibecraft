@@ -1,0 +1,1 @@
+ALTER TABLE `custom_pages` ADD `contentWidth` int DEFAULT 960;

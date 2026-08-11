@@ -1,0 +1,2 @@
+ALTER TABLE `nav_items` MODIFY COLUMN `sectionStyle` enum('featured','grid','apps','latest','overlay','list','list2','stat-banner') NOT NULL DEFAULT 'grid';--> statement-breakpoint
+ALTER TABLE `nav_items` ADD `statBannerData` text;

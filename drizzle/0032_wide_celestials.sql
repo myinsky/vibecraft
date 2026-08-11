@@ -1,0 +1,1 @@
+ALTER TABLE `posts` ADD `isHtmlSource` boolean DEFAULT false NOT NULL;

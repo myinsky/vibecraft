@@ -1,0 +1,1 @@
+ALTER TABLE `nav_items` ADD `sectionMarginBottom` int DEFAULT 36;

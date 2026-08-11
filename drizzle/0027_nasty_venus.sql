@@ -1,0 +1,1 @@
+ALTER TABLE `nav_items` MODIFY COLUMN `sectionStyle` enum('featured','grid','apps','latest','overlay','list','list2') NOT NULL DEFAULT 'grid';

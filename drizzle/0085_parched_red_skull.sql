@@ -1,0 +1,1 @@
+ALTER TABLE `users` MODIFY COLUMN `canWrite` boolean NOT NULL DEFAULT true;

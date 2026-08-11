@@ -1,0 +1,1 @@
+ALTER TABLE `nav_items` ADD `showOnHome` boolean DEFAULT true NOT NULL;

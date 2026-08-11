@@ -1,0 +1,1 @@
+ALTER TABLE `custom_pages` ADD `commentsEnabled` boolean DEFAULT true NOT NULL;

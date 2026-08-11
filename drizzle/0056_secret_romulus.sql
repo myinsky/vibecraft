@@ -1,0 +1,1 @@
+ALTER TABLE `custom_pages` ADD `thumbnail` varchar(1000);

@@ -1,0 +1,22 @@
+User-agent: *
+Allow: /
+
+# 관리자 및 인증 필요 페이지 크롤링 제외
+Disallow: /admin
+Disallow: /admin/
+Disallow: /write
+Disallow: /write/
+Disallow: /drafts
+Disallow: /settings/
+Disallow: /api/
+Disallow: /404
+Disallow: /component-showcase
+
+User-agent: AdsBot-Google
+Allow: /
+
+User-agent: Mediapartners-Google
+Allow: /
+
+# sitemap 위치
+Sitemap: https://vibecraftx.com/sitemap.xml

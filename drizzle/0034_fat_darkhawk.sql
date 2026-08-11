@@ -1,0 +1,1 @@
+ALTER TABLE `posts` ADD `appEmbedUrl` varchar(1000);

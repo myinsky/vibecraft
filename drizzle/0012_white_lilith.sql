@@ -1,0 +1,1 @@
+ALTER TABLE `posts` MODIFY COLUMN `content` mediumtext NOT NULL;

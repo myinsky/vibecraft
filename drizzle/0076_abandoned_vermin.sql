@@ -1,0 +1,1 @@
+ALTER TABLE `custom_pages` ADD `hideChrome` boolean DEFAULT false NOT NULL;
