@@ -1,3 +1,9 @@
+import {
+  configureStorageBindings,
+  storageFetch,
+  type R2BucketBinding,
+} from "../server/storage";
+
 interface AssetFetcher {
   fetch(request: Request): Promise<Response>;
 }
@@ -9,8 +15,9 @@ interface HyperdriveBinding {
 interface Env {
   ASSETS: AssetFetcher;
   HYPERDRIVE: HyperdriveBinding;
-  R2_BUCKET: unknown;
+  R2_BUCKET: R2BucketBinding;
   APP_ENV: "preview" | "production";
+  STORAGE_PROVIDER: "forge" | "r2";
 }
 
 function notImplemented(): Response {
@@ -25,10 +32,17 @@ function notImplemented(): Response {
 
 const worker = {
   async fetch(request: Request, env: Env): Promise<Response> {
+    configureStorageBindings({ R2_BUCKET: env.R2_BUCKET }, env.STORAGE_PROVIDER);
     const { pathname } = new URL(request.url);
 
-    // Phase 1 deliberately does not proxy dynamic traffic to Manus or the DB.
-    if (pathname.startsWith("/api/") || pathname.startsWith("/manus-storage/")) {
+    if (pathname.startsWith("/manus-storage/")) {
+      const key = decodeURIComponent(pathname.slice("/manus-storage/".length));
+      if (!key) return new Response("Missing storage key", { status: 400 });
+      return storageFetch(key);
+    }
+
+    // Dynamic application routes remain fail-closed until the Worker adapter exists.
+    if (pathname.startsWith("/api/")) {
       return notImplemented();
     }
 

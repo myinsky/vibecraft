@@ -89,3 +89,36 @@ None of these Dashboard actions is performed in Phase 1.
 Before Phase 2 deployment, restore a reproducible dependency install, run the
 existing checks/tests/build, validate Wrangler, and use preview-only resources.
 Do not run `pnpm db:push` as part of migration preparation.
+
+## Phase 2: Forge-to-R2 storage adapter
+
+`server/storage.ts` remains the public storage API used by existing callers. It
+selects a provider using `STORAGE_PROVIDER`:
+
+- `forge` (default): retains the Forge presign and S3 upload/download behavior.
+- `r2`: uses the `R2_BUCKET` Worker binding directly.
+
+The adapter exposes upload, provider-neutral fetch, download URL, delete, and
+existence operations. R2 download URLs remain `/manus-storage/{key}` because an
+R2 binding does not create S3-style presigned URLs. The storage proxy reads the
+object through the selected provider and preserves the existing public URL shape.
+
+### R2 preview migration procedure
+
+1. Create a preview-only R2 bucket; do not reuse a production Forge/S3 target.
+2. Replace only the placeholder bucket names in the preview Wrangler config.
+3. Keep `STORAGE_PROVIDER=forge` while copying objects and validating key parity.
+4. Copy objects with a separate, audited migration tool and compare object count,
+   key, byte size, content type, and checksums. This repository does not run that
+   copy automatically.
+5. Test uploads, inline images, attachments, backups, downloads, deletes, and
+   missing-object responses using preview data.
+6. Set `STORAGE_PROVIDER=r2` only for the preview Worker and verify rollback by
+   switching it back to `forge`.
+
+Forge and R2 are selected per runtime; Phase 2 does not dual-write or automatically
+fall back between providers. Existing objects must be copied before switching.
+R2 custom domains, public buckets, signed URLs, cache policy, lifecycle rules,
+CORS, large-object/multipart strategy, and production cutover remain unresolved.
+The current `sharp`, `multer`, `adm-zip`, Express streaming, and other Node-only
+paths are intentionally not converted to Worker-native implementations here.

@@ -2,7 +2,7 @@ import express from "express";
 import type { Express, Request, Response } from "express";
 import multer from "multer";
 import AdmZip from "adm-zip";
-import { storagePut, storageGetSignedUrl } from "./storage";
+import { storageFetch, storagePut } from "./storage";
 import { saveFileMetadata, getOriginalFilename } from "./db";
 import { sdk } from "./_core/sdk";
 import { COOKIE_NAME } from "@shared/const";
@@ -994,10 +994,9 @@ export function registerDownloadRoute(app: Express): void {
       const originalFilename = await getOriginalFilename(fileKey);
 
       // 2. S3 presigned URL 획득
-      const signedUrl = await storageGetSignedUrl(fileKey);
+      const s3Resp = await storageFetch(fileKey);
 
       // 3. S3에서 파일 스트리밍
-      const s3Resp = await fetch(signedUrl);
       if (!s3Resp.ok) {
         res.status(502).json({ error: "파일을 가져올 수 없습니다." });
         return;

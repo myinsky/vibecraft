@@ -1,6 +1,6 @@
 import type { Express } from "express";
-import { ENV } from "./env";
 import path from "path";
+import { storageFetch } from "../storage";
 
 // 이미지 확장자 목록 (장기 캐싱 적용 대상)
 const IMAGE_EXTENSIONS = new Set(['.webp', '.jpg', '.jpeg', '.png', '.gif', '.svg', '.avif', '.ico']);
@@ -21,7 +21,7 @@ const ALLOWED_WIDTHS = new Set([320, 480, 640, 800, 960, 1200]);
  * - Accept 헤더에 image/webp가 있는 브라우저에 WebP 변환 적용
  * - ?w=N 쿼리 파라미터로 너비 리사이즈 지원 (비율 유지, 확대 없음)
  */
-async function convertToWebP(imageUrl: string, cacheKey: string, resizeWidth?: number): Promise<Buffer | null> {
+async function convertToWebP(source: string | Response, cacheKey: string, resizeWidth?: number): Promise<Buffer | null> {
   const now = Date.now();
 
   // 캐시 히트
@@ -32,7 +32,7 @@ async function convertToWebP(imageUrl: string, cacheKey: string, resizeWidth?: n
 
   try {
     const sharp = (await import('sharp')).default;
-    const resp = await fetch(imageUrl);
+    const resp = typeof source === "string" ? await fetch(source) : source;
     if (!resp.ok) return null;
     const buf = Buffer.from(await resp.arrayBuffer());
     let pipeline = sharp(buf);
@@ -162,11 +162,11 @@ export function extractFilenameParam(rawUrl: string): string | null {
  */
 async function streamFileWithDisposition(
   res: import('express').Response,
-  signedUrl: string,
+  source: string | Response,
   filename: string,
   isDownload: boolean
 ): Promise<void> {
-  const fileResp = await fetch(signedUrl);
+  const fileResp = typeof source === "string" ? await fetch(source) : source;
   if (!fileResp.ok) {
     res.status(502).send("Failed to fetch file from storage");
     return;
@@ -213,11 +213,6 @@ export function registerStorageProxy(app: Express) {
       return;
     }
 
-    if (!ENV.forgeApiUrl || !ENV.forgeApiKey) {
-      res.status(500).send("Storage proxy not configured");
-      return;
-    }
-
     const ext = path.extname(key).toLowerCase();
     const isImage = IMAGE_EXTENSIONS.has(ext);
 
@@ -230,26 +225,9 @@ export function registerStorageProxy(app: Express) {
     const resizeWidth = ALLOWED_WIDTHS.has(requestedWidth) ? requestedWidth : 0;
 
     try {
-      const forgeUrl = new URL(
-        "v1/storage/presign/get",
-        ENV.forgeApiUrl.replace(/\/+$/, "") + "/",
-      );
-      forgeUrl.searchParams.set("path", key);
-
-      const forgeResp = await fetch(forgeUrl, {
-        headers: { Authorization: `Bearer ${ENV.forgeApiKey}` },
-      });
-
-      if (!forgeResp.ok) {
-        const body = await forgeResp.text().catch(() => "");
-        console.error(`[StorageProxy] forge error: ${forgeResp.status} ${body}`);
-        res.status(502).send("Storage backend error");
-        return;
-      }
-
-      const { url } = (await forgeResp.json()) as { url: string };
-      if (!url) {
-        res.status(502).send("Empty signed URL from backend");
+      const fileResp = await storageFetch(key);
+      if (!fileResp.ok) {
+        res.status(fileResp.status === 404 ? 404 : 502).send("Storage backend error");
         return;
       }
 
@@ -266,7 +244,7 @@ export function registerStorageProxy(app: Express) {
           // WebP 변환 + 선택적 리사이즈 (sharp + 메모리 캐시)
           // 캐시 키: key + 리사이즈 너비 (크기별로 별도 캐시)
           const cacheKey = resizeWidth > 0 ? `${key}@${resizeWidth}w` : key;
-          const webpBuf = await convertToWebP(url, cacheKey, resizeWidth || undefined);
+          const webpBuf = await convertToWebP(fileResp.clone(), cacheKey, resizeWidth || undefined);
           if (webpBuf) {
             res.set('Cache-Control', 'public, max-age=31536000, immutable');
             res.set('Content-Type', 'image/webp');
@@ -279,11 +257,6 @@ export function registerStorageProxy(app: Express) {
         }
 
         // 원본 이미지 서빙: 직접 프록시 + 장기 캐싱
-        const fileResp = await fetch(url);
-        if (!fileResp.ok) {
-          res.status(502).send("Failed to fetch image from storage");
-          return;
-        }
         const contentType = fileResp.headers.get('content-type') ?? `image/${ext.slice(1) || 'webp'}`;
         const contentLength = fileResp.headers.get('content-length');
 
@@ -347,7 +320,7 @@ export function registerStorageProxy(app: Express) {
           console.log(`[StorageProxy] Key-extracted filename: "${filename}" for key: ${key}`);
         }
 
-        await streamFileWithDisposition(res, url, filename, true);
+        await streamFileWithDisposition(res, fileResp, filename, true);
       }
     } catch (err) {
       console.error("[StorageProxy] failed:", err);

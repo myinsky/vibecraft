@@ -6,7 +6,10 @@
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": true,
   "preview_urls": true,
-  "vars": { "APP_ENV": "preview" },
+  "vars": {
+    "APP_ENV": "preview",
+    "STORAGE_PROVIDER": "r2"
+  },
   "assets": {
     "directory": "./dist/public",
     "binding": "ASSETS",
