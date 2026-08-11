@@ -1,0 +1,29 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "vibecraft-preview",
+  "main": "cloudflare/worker.ts",
+  "compatibility_date": "2026-08-12",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "preview_urls": true,
+  "vars": { "APP_ENV": "preview" },
+  "assets": {
+    "directory": "./dist/public",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*", "/manus-storage/*"]
+  },
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      "id": "REPLACE_WITH_PREVIEW_HYPERDRIVE_ID"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "R2_BUCKET",
+      "bucket_name": "REPLACE_WITH_PREVIEW_R2_BUCKET_NAME",
+      "preview_bucket_name": "REPLACE_WITH_LOCAL_PREVIEW_R2_BUCKET_NAME"
+    }
+  ]
+}

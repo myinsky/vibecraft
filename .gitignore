@@ -7,12 +7,16 @@ dist/
 build/
 *.dist
 
-# Environment variables
+# Environment variables and local Wrangler secrets
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*
+!.env.example
+*.env
+*.env.*
+!*.env.example
+.dev.vars
+.dev.vars.*
+.wrangler/
 
 # IDE and editor files
 .vscode/
@@ -105,6 +109,34 @@ temp/
 *.db
 *.sqlite
 *.sqlite3
+*.sql
+*.dump
+*.backup
+db-export*/
+db_export*/
+database-export*/
+database_export*/
+
+# Backups and exported credentials
+backup/
+backups/
+*backup*.json
+*api-key*.json
+*api-keys*.json
+*credentials*.json
+*service-account*.json
+credentials/
+secrets/
+
+# Private keys and certificate stores
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+id_rsa
+id_ed25519
 
 # Webdev artifacts (checkpoint zips, migrations, etc.)
 .webdev/
