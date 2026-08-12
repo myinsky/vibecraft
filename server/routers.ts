@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { getRuntimeEnv } from "./runtime-env";
 import { COOKIE_NAME } from "@shared/const";
 import DOMPurify from "isomorphic-dompurify";
 import { getSessionCookieOptions } from "./_core/cookies";
@@ -1704,7 +1705,7 @@ export const appRouter = router({
         const { generateResponsiveThumbnail } = await import('./imageOptimizer');
         const { updatePostThumbnail } = await import('./db');
         // 서버 내부에서 스토리지 접근 (localhost)
-        const port = process.env.PORT || 3000;
+      const port = getRuntimeEnv("PORT") || 3000;
         const storageBaseUrl = `http://localhost:${port}`;
         let optimized = 0, failed = 0;
         for (const post of targets) {
@@ -1901,7 +1902,7 @@ export const appRouter = router({
     checkGoogleIndexingKey: protectedProcedure
       .query(async ({ ctx }) => {
         if (ctx.user.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN' });
-        const key = process.env.GOOGLE_INDEXING_SERVICE_ACCOUNT_KEY;
+      const key = getRuntimeEnv("GOOGLE_INDEXING_SERVICE_ACCOUNT_KEY");
         if (!key) return { configured: false };
         try {
           const parsed = JSON.parse(key);
@@ -1976,7 +1977,7 @@ export const appRouter = router({
 
         // ── 방법 2: Google Indexing API (서비스 계정 키 필요) ─────────────────
         if (mode === 'indexing_api') {
-          const serviceAccountKey = process.env.GOOGLE_INDEXING_SERVICE_ACCOUNT_KEY;
+      const serviceAccountKey = getRuntimeEnv("GOOGLE_INDEXING_SERVICE_ACCOUNT_KEY");
           if (!serviceAccountKey) {
             throw new TRPCError({
               code: 'PRECONDITION_FAILED',
@@ -3726,7 +3727,7 @@ async function runBackupWithProgress(jobId: string) {
   // 메인 풀(connectionLimit=3)을 점유하지 않아 폴링 요청이 연결을 얻을 수 있음
   const { createConnection } = await import('mysql2/promise');
   const backupConn = await createConnection({
-    uri: process.env.DATABASE_URL!,
+          uri: getRuntimeEnv("DATABASE_URL")!,
     connectTimeout: 15000,
   });
   const { drizzle: drizzleConn } = await import('drizzle-orm/mysql2');

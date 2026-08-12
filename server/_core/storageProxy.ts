@@ -1,6 +1,7 @@
 import type { Express } from "express";
-import path from "path";
 import { storageFetch } from "../storage";
+import { getImageTransformer } from "../image-transform";
+import { pipeWebResponseToExpress } from "../web-streams";
 
 // 이미지 확장자 목록 (장기 캐싱 적용 대상)
 const IMAGE_EXTENSIONS = new Set(['.webp', '.jpg', '.jpeg', '.png', '.gif', '.svg', '.avif', '.ico']);
@@ -15,6 +16,16 @@ const WEBP_CACHE_TTL = 24 * 60 * 60 * 1000; // 24시간
 
 // 허용된 리사이즈 너비 목록 (보안: 임의 크기 방지)
 const ALLOWED_WIDTHS = new Set([320, 480, 640, 800, 960, 1200]);
+
+function basename(value: string): string {
+  return value.split(/[\\/]/).pop() ?? value;
+}
+
+function extension(value: string): string {
+  const name = basename(value);
+  const dot = name.lastIndexOf(".");
+  return dot < 0 ? "" : name.slice(dot).toLowerCase();
+}
 
 /**
  * 이미지를 WebP로 변환하고 선택적으로 리사이즈합니다 (메모리 캐시 포함).
@@ -31,23 +42,14 @@ async function convertToWebP(source: string | Response, cacheKey: string, resize
   }
 
   try {
-    const sharp = (await import('sharp')).default;
     const resp = typeof source === "string" ? await fetch(source) : source;
     if (!resp.ok) return null;
     const buf = Buffer.from(await resp.arrayBuffer());
-    let pipeline = sharp(buf);
-
-    // 리사이즈: 너비 지정 시 비율 유지하며 축소 (확대는 하지 않음)
-    if (resizeWidth && resizeWidth > 0) {
-      pipeline = pipeline.resize(resizeWidth, undefined, {
-        withoutEnlargement: true,
-        fit: 'inside',
-      });
-    }
-
-    const webpBuf = await pipeline
-      .webp({ quality: 82, effort: 4 })
-      .toBuffer();
+    const webpBuf = Buffer.from(await getImageTransformer().toWebP(buf, {
+      width: resizeWidth && resizeWidth > 0 ? resizeWidth : undefined,
+      quality: 82,
+      withoutEnlargement: true,
+    }));
 
     // LRU: 최대 200개 초과 시 가장 오래된 항목 제거
     if (webpCache.size >= WEBP_CACHE_MAX) {
@@ -195,14 +197,7 @@ async function streamFileWithDisposition(
   if (contentLength) res.set('Content-Length', contentLength);
 
   // Node.js fetch Response.body를 Express res로 파이프
-  if (fileResp.body) {
-    const { Readable } = await import('stream');
-    const nodeStream = Readable.fromWeb(fileResp.body as any);
-    nodeStream.pipe(res);
-  } else {
-    const buf = Buffer.from(await fileResp.arrayBuffer());
-    res.send(buf);
-  }
+  await pipeWebResponseToExpress(fileResp, res);
 }
 
 export function registerStorageProxy(app: Express) {
@@ -213,7 +208,7 @@ export function registerStorageProxy(app: Express) {
       return;
     }
 
-    const ext = path.extname(key).toLowerCase();
+    const ext = extension(key);
     const isImage = IMAGE_EXTENSIONS.has(ext);
 
     // ?download=1 또는 ?download=true 일 때 강제 다운로드
@@ -265,14 +260,7 @@ export function registerStorageProxy(app: Express) {
         if (canConvert) res.set('Vary', 'Accept'); // WebP 지원 브라우저에서 원본 서빙 시도 Vary 헤더 유지
         if (contentLength) res.set('Content-Length', contentLength);
 
-        if (fileResp.body) {
-          const { Readable } = await import('stream');
-          const nodeStream = Readable.fromWeb(fileResp.body as any);
-          nodeStream.pipe(res);
-        } else {
-          const buf = Buffer.from(await fileResp.arrayBuffer());
-          res.send(buf);
-        }
+        await pipeWebResponseToExpress(fileResp, res);
       } else {
         // 비이미지 파일 또는 이미지 강제 다운로드:
         // 항상 서버 스트리밍 + Content-Disposition 헤더 설정
@@ -316,7 +304,7 @@ export function registerStorageProxy(app: Express) {
 
         // 전략 4: S3 key에서 추출 (파라미터 없는 구버전 URL)
         if (!filename) {
-          filename = extractMeaningfulFilename(path.basename(key));
+          filename = extractMeaningfulFilename(basename(key));
           console.log(`[StorageProxy] Key-extracted filename: "${filename}" for key: ${key}`);
         }
 

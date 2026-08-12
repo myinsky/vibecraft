@@ -7,8 +7,8 @@
  * 3. 실패 시 원본 URL 그대로 유지 (안전 폴백)
  */
 
-import sharp from "sharp";
 import { storagePut } from "./storage";
+import { getImageTransformer } from "./image-transform";
 
 // ─── 최적화 설정 ──────────────────────────────────────────────────────────────
 const THUMB_CONFIG = {
@@ -65,17 +65,15 @@ async function convertToWebP(
     return { buffer, mimeType };
   }
   // 이미 WebP이고 크기가 작으면 리사이징만 확인
-  const img = sharp(buffer);
-  const meta = await img.metadata();
+  const transformer = getImageTransformer();
+  const meta = await transformer.metadata(buffer);
   const needsResize = meta.width && meta.width > THUMB_CONFIG.maxWidth;
 
-  const pipeline = needsResize
-    ? img.resize({ width: THUMB_CONFIG.maxWidth, withoutEnlargement: true })
-    : img;
-
-  const optimized = await pipeline
-    .webp({ quality: THUMB_CONFIG.webpQuality })
-    .toBuffer();
+  const optimized = Buffer.from(await transformer.toWebP(buffer, {
+    width: needsResize ? THUMB_CONFIG.maxWidth : undefined,
+    quality: THUMB_CONFIG.webpQuality,
+    withoutEnlargement: true,
+  }));
 
   return { buffer: optimized, mimeType: "image/webp" };
 }
@@ -259,17 +257,19 @@ export async function generateResponsiveThumbnail(
     const baseKey = storageKey.replace(/\.[^.]+$/, ''); // 확장자 제거
 
     // 병렬로 각 해상도 WebP 생성 + S3 업로드
-    const imgMeta = await sharp(buffer).metadata();
+    const transformer = getImageTransformer();
+    const imgMeta = await transformer.metadata(buffer);
     const originalWidth = imgMeta.width ?? 1200;
     const widthsToGenerate = (RESPONSIVE_WIDTHS_MIGRATE as readonly number[]).filter(w => w <= originalWidth) as number[];
     if (widthsToGenerate.length === 0) widthsToGenerate.push(originalWidth);
 
     const results = await Promise.all(
       widthsToGenerate.map(async (w) => {
-        const resized = await sharp(buffer)
-          .resize({ width: w, withoutEnlargement: true })
-          .webp({ quality: THUMB_CONFIG.webpQuality })
-          .toBuffer();
+        const resized = await transformer.toWebP(buffer, {
+          width: w,
+          quality: THUMB_CONFIG.webpQuality,
+          withoutEnlargement: true,
+        });
         const key = `${baseKey}_${w}w.webp`;
         const { url } = await storagePut(key, resized, 'image/webp');
         return { width: w, url, key };

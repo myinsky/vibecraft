@@ -1,3 +1,5 @@
+import { getRuntimeEnv } from "./runtime-env";
+
 /**
  * Google Indexing API 연동 모듈
  *
@@ -51,7 +53,7 @@ async function getGoogleAccessToken(serviceAccount: {
  * 실패해도 예외를 던지지 않음 (비동기 fire-and-forget 용도)
  */
 export async function notifyGoogleIndexing(url: string): Promise<void> {
-  const serviceAccountKey = process.env.GOOGLE_INDEXING_SERVICE_ACCOUNT_KEY;
+  const serviceAccountKey = getRuntimeEnv("GOOGLE_INDEXING_SERVICE_ACCOUNT_KEY");
   if (!serviceAccountKey) {
     console.log("[GoogleIndexing] 서비스 계정 키 없음 - 건너뜀");
     return;

@@ -4,16 +4,18 @@ import { eq as eqTop } from "drizzle-orm";
 import { InsertUser, users } from "../drizzle/schema";
 import { ENV } from './_core/env';
 import { cache, TTL } from './cache';
+import { getRuntimeEnv } from "./runtime-env";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
 // Lazily create the drizzle instance so local tooling can run without a DB.
 // TiDB Serverless 무료 플랜 최대 동시 연결 5개 제한 → connectionLimit=3으로 설정하여 여유분 확보
 export async function getDb() {
-  if (!_db && process.env.DATABASE_URL) {
+  const databaseUrl = getRuntimeEnv("DATABASE_URL");
+  if (!_db && databaseUrl) {
     try {
       const pool = createPool({
-        uri: process.env.DATABASE_URL,
+        uri: databaseUrl,
         connectionLimit: 5,       // TiDB Serverless 연결 최대 5개 허용
         waitForConnections: true, // 연결 대기 (타임아웃 없이)
         queueLimit: 0,            // 대기 큐 무제한

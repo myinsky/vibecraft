@@ -4,6 +4,7 @@ import express from "express";
 import cookieParser from "cookie-parser";
 import { createServer } from "http";
 import net from "net";
+import { getRuntimeEnv } from "../runtime-env";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import { registerStorageProxy } from "./storageProxy";
@@ -103,7 +104,7 @@ async function startServer() {
 
   // 빌드 버전 체크 엔드포인트: 프론트엔드가 주기적으로 폴링하여 새 배포 감지
   // BUILD_HASH 환경변수가 없으면 서버 시작 시간으로 대체 (개발환경에서는 항상 다름)
-  const BUILD_HASH = process.env.BUILD_HASH || `dev-${Date.now().toString(36)}`;
+const BUILD_HASH = getRuntimeEnv("BUILD_HASH") || `dev-${Date.now().toString(36)}`;
   app.get('/api/version', (_req, res) => {
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
     res.json({ hash: BUILD_HASH });
@@ -145,13 +146,13 @@ async function startServer() {
     })
   );
   // development mode uses Vite, production mode uses static files
-  if (process.env.NODE_ENV === "development") {
+  if (getRuntimeEnv("NODE_ENV") === "development") {
     await setupVite(app, server);
   } else {
     serveStatic(app);
   }
 
-  const preferredPort = parseInt(process.env.PORT || "3000");
+  const preferredPort = parseInt(getRuntimeEnv("PORT") || "3000");
   const port = await findAvailablePort(preferredPort);
 
   if (port !== preferredPort) {

@@ -1,12 +1,13 @@
 import express from "express";
 import type { Express, Request, Response } from "express";
 import multer from "multer";
-import AdmZip from "adm-zip";
 import { storageFetch, storagePut } from "./storage";
 import { saveFileMetadata, getOriginalFilename } from "./db";
 import { sdk } from "./_core/sdk";
 import { COOKIE_NAME } from "@shared/const";
-import sharp from "sharp";
+import { getImageTransformer } from "./image-transform";
+import { openZipArchive } from "./zip-adapter";
+import { pipeWebResponseToExpress } from "./web-streams";
 
 /**
  * multer는 multipart/form-data 파일명을 latin1로 파싱함.
@@ -64,20 +65,18 @@ async function optimizeImage(
   }
 
   try {
-    const img = sharp(buffer);
-    const meta = await img.metadata();
+    const transformer = getImageTransformer();
+    const meta = await transformer.metadata(buffer);
 
     // 너비가 maxWidth 초과 시 리사이징 (비율 유지, 확대는 하지 않음)
     const needsResize =
       meta.width && meta.width > IMAGE_OPTIMIZE.maxWidth;
 
-    const pipeline = needsResize
-      ? img.resize({ width: IMAGE_OPTIMIZE.maxWidth, withoutEnlargement: true })
-      : img;
-
-    const optimized = await pipeline
-      .webp({ quality: IMAGE_OPTIMIZE.webpQuality })
-      .toBuffer();
+    const optimized = Buffer.from(await transformer.toWebP(buffer, {
+      width: needsResize ? IMAGE_OPTIMIZE.maxWidth : undefined,
+      quality: IMAGE_OPTIMIZE.webpQuality,
+      withoutEnlargement: true,
+    }));
 
     return { buffer: optimized, mimeType: "image/webp", ext: "webp" };
   } catch (err) {
@@ -109,8 +108,8 @@ export async function generateResponsiveImages(
   }
 
   try {
-    const img = sharp(buffer);
-    const meta = await img.metadata();
+    const transformer = getImageTransformer();
+    const meta = await transformer.metadata(buffer);
     const originalWidth = meta.width ?? 1200;
 
     // 원본보다 큰 크기는 생성하지 않음 (withoutEnlargement)
@@ -121,10 +120,11 @@ export async function generateResponsiveImages(
     // 병렬로 각 해상도 WebP 생성 + S3 업로드
     const results = await Promise.all(
       widthsToGenerate.map(async (w) => {
-        const resized = await sharp(buffer)
-          .resize({ width: w, withoutEnlargement: true })
-          .webp({ quality: IMAGE_OPTIMIZE.webpQuality })
-          .toBuffer();
+        const resized = await transformer.toWebP(buffer, {
+          width: w,
+          quality: IMAGE_OPTIMIZE.webpQuality,
+          withoutEnlargement: true,
+        });
         const key = `${baseKey}_${w}w.webp`;
         const { url } = await storagePut(key, resized, "image/webp");
         return { width: w, url, key };
@@ -454,8 +454,8 @@ export function registerUploadRoutes(app: Express) {
         if (!user) { sendEvent({ type: 'error', error: '로그인이 필요합니다.' }); res.end(); return; }
         if (!req.file) { sendEvent({ type: 'error', error: 'ZIP 파일이 없습니다.' }); res.end(); return; }
 
-        const zip = new AdmZip(req.file.buffer);
-        const entries = zip.getEntries();
+        const zip = await openZipArchive(req.file.buffer);
+        const entries = zip.entries();
         // HTML 파일 찾기 (루트 또는 서브폴더 안의 .html/.htm)
         const IMAGE_EXTS = /\.(jpe?g|png|gif|webp|svg|bmp|ico|tiff?)$/i;
         const htmlEntry = entries.find(e =>
@@ -1027,18 +1027,7 @@ export function registerDownloadRoute(app: Express): void {
       res.setHeader("Cache-Control", "no-store");
 
       // 7. 스트리밍
-      if (s3Resp.body) {
-        const { Readable } = await import("stream");
-        const nodeStream = Readable.fromWeb(s3Resp.body as import("stream/web").ReadableStream);
-        nodeStream.pipe(res);
-        nodeStream.on("error", (err) => {
-          console.error("[Download] Stream error:", err);
-          if (!res.headersSent) res.status(500).end();
-        });
-      } else {
-        const buffer = Buffer.from(await s3Resp.arrayBuffer());
-        res.end(buffer);
-      }
+      await pipeWebResponseToExpress(s3Resp, res);
     } catch (err: unknown) {
       console.error("[Download] Failed:", err);
       const message = err instanceof Error ? err.message : "다운로드 실패";

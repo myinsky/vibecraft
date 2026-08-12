@@ -1,6 +1,7 @@
 import { forgeStorageProvider } from "./storage-forge";
 import { createR2StorageProvider } from "./storage-r2";
 import type { StorageBindings, StorageData, StorageProvider, StorageResult } from "./storage-adapter-types";
+import { getRuntimeEnv } from "./runtime-env";
 
 export type StorageProviderName = "forge" | "r2";
 
@@ -13,7 +14,7 @@ export function configureStorageBindings(nextBindings: StorageBindings, provider
 }
 
 export function getStorageProviderName(): StorageProviderName {
-  const provider = (providerOverride ?? process.env.STORAGE_PROVIDER ?? "forge").toLowerCase();
+  const provider = (providerOverride ?? getRuntimeEnv("STORAGE_PROVIDER") ?? "forge").toLowerCase();
   if (provider !== "forge" && provider !== "r2") throw new Error(`Unsupported STORAGE_PROVIDER: ${provider}`);
   return provider;
 }

@@ -15,8 +15,8 @@
  *     }]
  *   });
  */
-import sharp from "sharp";
 import { storagePut } from "server/storage";
+import { getImageTransformer } from "server/image-transform";
 import { ENV } from "./env";
 
 export type GenerateImageOptions = {
@@ -52,17 +52,15 @@ async function convertGeneratedImageToWebP(
   }
 
   try {
-    const img = sharp(buffer);
-    const meta = await img.metadata();
+    const transformer = getImageTransformer();
+    const meta = await transformer.metadata(buffer);
     const needsResize = meta.width && meta.width > MAX_WIDTH;
 
-    const pipeline = needsResize
-      ? img.resize({ width: MAX_WIDTH, withoutEnlargement: true })
-      : img;
-
-    const optimized = await pipeline
-      .webp({ quality: WEBP_QUALITY })
-      .toBuffer();
+    const optimized = Buffer.from(await transformer.toWebP(buffer, {
+      width: needsResize ? MAX_WIDTH : undefined,
+      quality: WEBP_QUALITY,
+      withoutEnlargement: true,
+    }));
 
     return { buffer: optimized, mimeType: "image/webp", ext: "webp" };
   } catch (err) {

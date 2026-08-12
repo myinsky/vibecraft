@@ -8,6 +8,7 @@ import viteConfig from "../../vite.config";
 import { resolveMetaData, injectMetaTags, injectHeadScripts } from "../metaInjector";
 import { findRedirectTarget, getPostById } from "../db";
 import crypto from "crypto";
+import { getRuntimeEnv } from "../runtime-env";
 
 // manus-runtime 인라인 스크립트를 외부 파일로 분리하여 브라우저 캐시 활용
 // 366KB 인라인 스크립트 → 외부 파일 + 브라우저 캐시 = FCP/LCP 대폭 개선
@@ -172,7 +173,7 @@ let _indexHtmlCache: string | null = null;
 async function getIndexHtml(indexPath: string): Promise<string> {
   if (_indexHtmlCache) return _indexHtmlCache;
   const html = await fs.promises.readFile(indexPath, "utf-8");
-  if (process.env.NODE_ENV !== "development") {
+  if (getRuntimeEnv("NODE_ENV") !== "development") {
     _indexHtmlCache = html; // 프로덕션에서만 캐시 (개발 중에는 항상 최신 파일 사용)
   }
   return html;
@@ -210,7 +211,7 @@ export function invalidateMetaHtmlCache(pathname?: string) {
 
 export function serveStatic(app: Express) {
   const distPath =
-    process.env.NODE_ENV === "development"
+      getRuntimeEnv("NODE_ENV") === "development"
       ? path.resolve(import.meta.dirname, "../..", "dist", "public")
       : path.resolve(import.meta.dirname, "public");
 

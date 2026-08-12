@@ -122,3 +122,46 @@ R2 custom domains, public buckets, signed URLs, cache policy, lifecycle rules,
 CORS, large-object/multipart strategy, and production cutover remain unresolved.
 The current `sharp`, `multer`, `adm-zip`, Express streaming, and other Node-only
 paths are intentionally not converted to Worker-native implementations here.
+
+## Phase 3: Node compatibility inventory
+
+| Dependency/API | Class | Current treatment |
+| --- | --- | --- |
+| Fetch, Request, Response, FormData, Blob, URL, Web Streams | A | Worker-native Web APIs |
+| Web Crypto (`crypto.randomUUID`, `crypto.subtle`) | A | Prefer for shared code |
+| Buffer and common Node crypto/path helpers | B | Available through `nodejs_compat`; reduce in shared paths |
+| Node readable streams | B | Isolated behind the Express/Web Stream bridge |
+| Outgoing Node http/https client APIs | B | Often compatible, but `fetch` is preferred |
+| `sharp` | C | Native image processing; isolated behind `ImageTransformer` |
+| `multer` | C | Express middleware; Worker parser uses `Request.formData()` |
+| `adm-zip` ZIP routes | C | Node implementation isolated behind `ZipArchive` |
+| `fs`, Vite middleware, and local filesystem serving | C | Must remain in the Node development/runtime entry |
+| `http.createServer` and Express server lifecycle | C | Worker entry uses `fetch()` instead |
+| Incoming Node proxy streams and Agents | C | Replace per route with fetch/Web Streams |
+| `child_process` | C | No current application usage found |
+| Direct `process.env` access | C | Centralized in `runtime-env.ts` with Worker binding fallback |
+
+Class A is directly usable in Workers. Class B requires `nodejs_compat` and may
+still be a migration target. Class C must be replaced, isolated to the Node
+entry, or implemented by an external Cloudflare service.
+
+### Phase 3 adapters
+
+- `runtime-env.ts` reads injected Worker Env bindings first, then Node
+  `process.env`. The Worker injects its bindings at the request boundary.
+- `multipart-adapter.ts` parses Worker uploads with `Request.formData()` while
+  existing Express routes continue using multer and its current size filters.
+- `image-transform.ts` defines the replaceable image transformation interface;
+  the default Node implementation continues using sharp.
+- `zip-adapter.ts` defines the archive boundary and lazily loads the Node-only
+  `zip-node.ts` implementation using adm-zip.
+- `web-streams.ts` contains the only Web-to-Node stream bridge used by Express.
+  Worker storage downloads return Web `Response` objects directly.
+
+The Worker multipart parser is not connected to the existing upload endpoints
+because `/api/*` is still fail-closed. Route validation, authentication, limits,
+and error parity must be designed before enabling those endpoints.
+
+Cloudflare Images or another image processing service is still required for a
+fully Worker-native replacement of sharp. A future implementation can supply an
+`ImageTransformer` without changing storage or upload business interfaces.
