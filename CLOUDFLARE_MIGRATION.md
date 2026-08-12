@@ -220,3 +220,50 @@ validation, transaction and prepared-statement behavior, query-cache policy,
 connection/concurrency limits, request cancellation, and full application route
 lifecycle tests. No migration, schema mutation, table operation, or data copy was
 performed in Phase 4.
+
+## Phase 5: Preview minimum runtime
+
+The preview Worker exposes two diagnostic routes:
+
+- `GET /api/health` returns `{ "status": "ok" }` with HTTP 200 and does not
+  initialize or query the database.
+- `GET /api/internal/db-health` remains hidden behind the `DB_HEALTH_TOKEN`
+  bearer secret. It creates a request-scoped Hyperdrive/mysql2 connection, wraps
+  it with the existing Drizzle MySQL adapter, executes only `SELECT 1`, and closes
+  the logical connection in `finally`. Responses contain no database metadata or
+  error details.
+
+All other `/api/*` routes remain fail-closed with HTTP 501. They are handled by
+the Worker first and never fall through to Static Assets. `/manus-storage/*`
+continues to use the Phase 2 R2 adapter; no object copy is performed here.
+
+Static files are served from `dist/public` using the `ASSETS` binding.
+`not_found_handling: single-page-application` provides `index.html` fallback for
+client routes such as `/article/...` and `/admin/...`. The Worker runs first only
+for `/api/*` and `/manus-storage/*`, keeping API failures out of the SPA fallback.
+
+### Preview deployment checklist (manual; not executed in this phase)
+
+- [ ] Create a preview-only Cloudflare Worker.
+- [ ] Create a Hyperdrive configuration for the existing MySQL/TiDB database.
+- [ ] Create a least-privilege preview database credential.
+- [ ] Create a preview-only R2 bucket.
+- [ ] Replace the preview Hyperdrive and R2 placeholders outside committed secrets.
+- [ ] Register `DB_HEALTH_TOKEN` as a Worker secret.
+- [ ] Register required non-secret vars: `APP_ENV=preview`,
+      `DATABASE_PROVIDER=hyperdrive`, and `STORAGE_PROVIDER=r2`.
+- [ ] Install dependencies with the repository's supported npm/pnpm version.
+- [ ] Run the TypeScript checks and existing tests.
+- [ ] Build the React assets into `dist/public`.
+- [ ] Validate the Wrangler configuration against the installed Wrangler version.
+- [ ] Deploy only to the preview Worker (`wrangler deploy` with the preview config);
+      do not attach a production route or custom domain.
+- [ ] Test unauthenticated `GET /api/health` and confirm HTTP 200 plus
+      `{ "status": "ok" }`.
+- [ ] Confirm unauthenticated `GET /api/internal/db-health` returns HTTP 404.
+- [ ] Test authorized `GET /api/internal/db-health` and confirm only HTTP 200/503
+      plus the non-sensitive status response.
+- [ ] Test direct SPA navigation for `/article/...` and `/admin/...`.
+- [ ] Confirm an unmigrated `/api/*` route returns HTTP 501, not `index.html`.
+- [ ] Keep DNS, production domains, OAuth callbacks, schema, migrations, and data
+      unchanged.

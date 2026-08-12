@@ -46,10 +46,19 @@ function notImplemented(): Response {
 
 const worker = {
   async fetch(request: Request, env: Env): Promise<Response> {
+    const { pathname } = new URL(request.url);
+
+    // Public liveness probe. It deliberately does not initialize or query the DB.
+    if (pathname === "/api/health" && request.method === "GET") {
+      return Response.json(
+        { status: "ok" },
+        { status: 200, headers: { "Cache-Control": "no-store" } },
+      );
+    }
+
     configureRuntimeEnv(env as unknown as RuntimeEnv);
     configureStorageBindings({ R2_BUCKET: env.R2_BUCKET }, env.STORAGE_PROVIDER);
     configureDatabaseBindings({ HYPERDRIVE: env.HYPERDRIVE }, env.DATABASE_PROVIDER);
-    const { pathname } = new URL(request.url);
 
     if (pathname === "/api/internal/db-health" && request.method === "GET") {
       const expected = env.DB_HEALTH_TOKEN;

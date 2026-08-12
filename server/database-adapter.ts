@@ -1,4 +1,5 @@
 import { drizzle } from "drizzle-orm/mysql2";
+import { sql } from "drizzle-orm";
 import { createConnection, createPool, type Connection, type Pool } from "mysql2/promise";
 import { getRuntimeEnv } from "./runtime-env";
 
@@ -81,18 +82,11 @@ export async function createRequestDatabase(): Promise<RequestDatabaseContext> {
 }
 
 export async function checkDatabaseConnection(): Promise<boolean> {
-  if (getDatabaseProviderName() === "node") {
-    if (!nodePool) getNodeDatabase();
-    if (!nodePool) return false;
-    await nodePool.query("SELECT 1");
-    return true;
-  }
-  if (!bindings.HYPERDRIVE) return false;
-  const connection = await createHyperdriveConnection(bindings.HYPERDRIVE);
+  const context = await createRequestDatabase();
   try {
-    await connection.query("SELECT 1");
+    await context.db.execute(sql`SELECT 1`);
     return true;
   } finally {
-    await connection.end();
+    await context.close();
   }
 }
