@@ -165,3 +165,58 @@ and error parity must be designed before enabling those endpoints.
 Cloudflare Images or another image processing service is still required for a
 fully Worker-native replacement of sharp. A future implementation can supply an
 `ImageTransformer` without changing storage or upload business interfaces.
+
+## Phase 4: MySQL/TiDB through Hyperdrive
+
+The schema, Drizzle schema files, migration history, and database contents remain
+unchanged. `drizzle.config.ts` continues to use `DATABASE_URL` only for explicit
+Node-side Drizzle Kit commands; no Drizzle Kit command is run by the Worker.
+
+### Provider model
+
+- `DATABASE_PROVIDER=node` is the default for the current Manus/Node runtime.
+  `server/db.ts` retains its lazy mysql2 pool and existing `getDb()` call surface.
+  It continues to use `DATABASE_URL`, `connectionLimit`, queue/wait settings, and
+  TCP keep-alive behavior.
+- `DATABASE_PROVIDER=hyperdrive` is for Workers. `database-adapter.ts` creates a
+  request-scoped `mysql2/promise` connection from the `HYPERDRIVE` binding fields
+  (`host`, `port`, `user`, `password`, and `database`) with `disableEval: true`.
+  Hyperdrive manages the underlying connection pool, so the Worker closes its
+  logical mysql2 connection after each request instead of creating a global pool.
+
+The installed mysql2 version satisfies Cloudflare's minimum version requirement.
+`createRequestDatabase()` wraps either connection in the existing
+`drizzle-orm/mysql2` adapter and returns a `close()` function. Worker business
+routes must call `close()` in `finally`; they are not enabled during this phase.
+
+### Private database health check
+
+`GET /api/internal/db-health` executes only `SELECT 1`. It never reads a table or
+returns rows, credentials, hostnames, connection strings, or error details.
+
+The route requires `Authorization: Bearer <DB_HEALTH_TOKEN>`. `DB_HEALTH_TOKEN`
+must be configured as a Worker secret. When the secret is absent or the header is
+wrong, the route returns 404 to avoid advertising the endpoint. An authorized
+request returns only `ok` or `unavailable`, the selected provider, and HTTP 200 or
+503 with `Cache-Control: no-store`.
+
+### Dashboard work deferred
+
+1. Create a least-privilege preview database credential. A read-only credential
+   is preferred for the initial health check and query rehearsal.
+2. Create the Hyperdrive configuration against the existing MySQL/TiDB endpoint.
+3. Replace `REPLACE_WITH_PREVIEW_HYPERDRIVE_ID` only in the preview configuration.
+4. Add `DB_HEALTH_TOKEN` through Workers Secrets.
+5. Confirm the database's supported TLS mode and authentication plugin.
+6. Validate request-scoped Drizzle queries and connection cleanup using preview
+   traffic before enabling any application DB route.
+
+No `localConnectionString` is committed because it contains database credentials.
+For local testing, use the ignored Cloudflare Hyperdrive local connection-string
+environment variable or another non-versioned secret mechanism.
+
+Unresolved items include TiDB-specific Hyperdrive compatibility, TLS/auth plugin
+validation, transaction and prepared-statement behavior, query-cache policy,
+connection/concurrency limits, request cancellation, and full application route
+lifecycle tests. No migration, schema mutation, table operation, or data copy was
+performed in Phase 4.

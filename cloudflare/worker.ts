@@ -4,13 +4,15 @@ import {
   type R2BucketBinding,
 } from "../server/storage";
 import { configureRuntimeEnv, type RuntimeEnv } from "../server/runtime-env";
+import {
+  checkDatabaseConnection,
+  configureDatabaseBindings,
+  type DatabaseProviderName,
+  type HyperdriveBinding,
+} from "../server/database-adapter";
 
 interface AssetFetcher {
   fetch(request: Request): Promise<Response>;
-}
-
-interface HyperdriveBinding {
-  connectionString: string;
 }
 
 interface Env {
@@ -19,6 +21,8 @@ interface Env {
   R2_BUCKET: R2BucketBinding;
   APP_ENV: "preview" | "production";
   STORAGE_PROVIDER: "forge" | "r2";
+  DATABASE_PROVIDER: DatabaseProviderName;
+  DB_HEALTH_TOKEN?: string;
   DATABASE_URL?: string;
   JWT_SECRET?: string;
   OAUTH_SERVER_URL?: string;
@@ -44,7 +48,29 @@ const worker = {
   async fetch(request: Request, env: Env): Promise<Response> {
     configureRuntimeEnv(env as unknown as RuntimeEnv);
     configureStorageBindings({ R2_BUCKET: env.R2_BUCKET }, env.STORAGE_PROVIDER);
+    configureDatabaseBindings({ HYPERDRIVE: env.HYPERDRIVE }, env.DATABASE_PROVIDER);
     const { pathname } = new URL(request.url);
+
+    if (pathname === "/api/internal/db-health" && request.method === "GET") {
+      const expected = env.DB_HEALTH_TOKEN;
+      const supplied = request.headers.get("Authorization");
+      if (!expected || supplied !== `Bearer ${expected}`) {
+        return new Response("Not found", { status: 404 });
+      }
+      try {
+        const healthy = await checkDatabaseConnection();
+        return Response.json(
+          { status: healthy ? "ok" : "unavailable", provider: env.DATABASE_PROVIDER },
+          { status: healthy ? 200 : 503, headers: { "Cache-Control": "no-store" } },
+        );
+      } catch (error) {
+        console.error("[DB health] connection failed", error);
+        return Response.json(
+          { status: "unavailable", provider: env.DATABASE_PROVIDER },
+          { status: 503, headers: { "Cache-Control": "no-store" } },
+        );
+      }
+    }
 
     if (pathname.startsWith("/manus-storage/")) {
       const key = decodeURIComponent(pathname.slice("/manus-storage/".length));

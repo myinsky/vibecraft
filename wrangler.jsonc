@@ -8,7 +8,8 @@
   "preview_urls": true,
   "vars": {
     "APP_ENV": "preview",
-    "STORAGE_PROVIDER": "r2"
+    "STORAGE_PROVIDER": "r2",
+    "DATABASE_PROVIDER": "hyperdrive"
   },
   "assets": {
     "directory": "./dist/public",
