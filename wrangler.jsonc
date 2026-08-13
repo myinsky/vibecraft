@@ -24,8 +24,7 @@
   "r2_buckets": [
     {
       "binding": "R2_BUCKET",
-      "bucket_name": "REPLACE_WITH_PREVIEW_R2_BUCKET_NAME",
-      "preview_bucket_name": "REPLACE_WITH_LOCAL_PREVIEW_R2_BUCKET_NAME"
+      "bucket_name": "vibecraft-preview"
     }
   ]
 }
