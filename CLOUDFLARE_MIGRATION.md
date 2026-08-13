@@ -25,7 +25,7 @@ requests to the existing production service or database.
 - Cloudflare Worker request entry at `cloudflare/worker.ts`
 - Workers Static Assets serving `dist/public`
 - A future request/auth adapter independent of Express
-- Hyperdrive connecting to the existing MySQL/TiDB database
+- Direct `mysql2/promise` connections from Workers to the existing TiDB Cloud database
 - R2 replacing storage only after a separate compatibility and data migration phase
 - Workers Cron Triggers calling extracted scheduled business functions
 
@@ -38,7 +38,8 @@ are outside Phase 1.
 | --- | --- | --- |
 | Workers | Dynamic request adapter | Entry shell only |
 | Workers Static Assets | Vite frontend | Binding configured |
-| Hyperdrive | Existing MySQL/TiDB connection | Placeholder only |
+| Direct MySQL | Existing TiDB Cloud connection | Selected fallback |
+| Hyperdrive | Optional database connection | Preserved but inactive |
 | R2 | Future object storage | Placeholder only |
 | Workers Secrets | Server-only credentials | Documented, not created |
 | Cron Triggers | Scheduled jobs | Deferred |
@@ -53,7 +54,8 @@ belongs in that file.
 Cloudflare bindings declared in `wrangler.jsonc` are:
 
 - `ASSETS`: built frontend assets
-- `HYPERDRIVE`: future existing-database connection
+- `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`: direct TiDB connection
+- `HYPERDRIVE`: optional inactive fallback; no binding is required
 - `R2_BUCKET`: future object storage
 - `APP_ENV`: non-secret environment label
 
@@ -65,7 +67,7 @@ to browsers.
 ## Manual Dashboard work for a future phase
 
 1. Create separate preview and production Workers environments.
-2. Create preview-only Hyperdrive credentials with minimum access.
+2. Create preview-only TiDB credentials with minimum access.
 3. Create separate preview and production R2 buckets and configure retention/CORS.
 4. Add server-only values through Workers Secrets.
 5. Configure OAuth callback URLs for a preview hostname.
@@ -166,7 +168,7 @@ Cloudflare Images or another image processing service is still required for a
 fully Worker-native replacement of sharp. A future implementation can supply an
 `ImageTransformer` without changing storage or upload business interfaces.
 
-## Phase 4: MySQL/TiDB through Hyperdrive
+## Phase 4: Direct MySQL/TiDB from Workers
 
 The schema, Drizzle schema files, migration history, and database contents remain
 unchanged. `drizzle.config.ts` continues to use `DATABASE_URL` only for explicit
@@ -178,11 +180,25 @@ Node-side Drizzle Kit commands; no Drizzle Kit command is run by the Worker.
   `server/db.ts` retains its lazy mysql2 pool and existing `getDb()` call surface.
   It continues to use `DATABASE_URL`, `connectionLimit`, queue/wait settings, and
   TCP keep-alive behavior.
-- `DATABASE_PROVIDER=hyperdrive` is for Workers. `database-adapter.ts` creates a
+- `DATABASE_PROVIDER=direct-mysql` is the active Workers path. It creates a
+  request-scoped `mysql2/promise` connection from `DB_HOST`, `DB_PORT`, `DB_USER`,
+  `DB_PASSWORD`, and `DB_NAME`, requires TLS certificate verification, and uses
+  `disableEval: true` for Workers compatibility. The connection is always closed
+  with `connection.end()` in a `finally` block after the request query completes.
+- `DATABASE_PROVIDER=hyperdrive` remains available but inactive. The adapter creates a
   request-scoped `mysql2/promise` connection from the `HYPERDRIVE` binding fields
   (`host`, `port`, `user`, `password`, and `database`) with `disableEval: true`.
   Hyperdrive manages the underlying connection pool, so the Worker closes its
   logical mysql2 connection after each request instead of creating a global pool.
+
+### Why Hyperdrive is inactive
+
+Repeated TiDB Cloud connection attempts failed with `Hyperdrive does not currently
+support MySQL AuthSwitchRequest messages`. TiDB's
+`default_authentication_plugin=mysql_native_password` did not avoid that protocol
+incompatibility. Therefore Hyperdrive is no longer a required Wrangler binding;
+direct TLS MySQL is the preview fallback. The Hyperdrive adapter remains in source
+for a future compatibility retest and can only be selected explicitly.
 
 The installed mysql2 version satisfies Cloudflare's minimum version requirement.
 `createRequestDatabase()` wraps either connection in the existing
@@ -204,18 +220,18 @@ request returns only `ok` or `unavailable`, the selected provider, and HTTP 200 
 
 1. Create a least-privilege preview database credential. A read-only credential
    is preferred for the initial health check and query rehearsal.
-2. Create the Hyperdrive configuration against the existing MySQL/TiDB endpoint.
-3. Replace `REPLACE_WITH_PREVIEW_HYPERDRIVE_ID` only in the preview configuration.
-4. Add `DB_HEALTH_TOKEN` through Workers Secrets.
-5. Confirm the database's supported TLS mode and authentication plugin.
+2. Add `DB_HOST` and `DB_NAME` as preview environment variables. `DB_PORT` defaults
+   to the non-secret preview value in Wrangler and must match the TiDB endpoint.
+3. Add `DB_USER`, `DB_PASSWORD`, and `DB_HEALTH_TOKEN` through Workers Secrets.
+4. Allow Cloudflare Worker egress according to the TiDB Cloud network policy.
+5. Confirm TLS certificate validation and authentication against preview credentials.
 6. Validate request-scoped Drizzle queries and connection cleanup using preview
    traffic before enabling any application DB route.
 
-No `localConnectionString` is committed because it contains database credentials.
-For local testing, use the ignored Cloudflare Hyperdrive local connection-string
-environment variable or another non-versioned secret mechanism.
+No connection string or credential is committed. For local testing, put the
+direct MySQL values in ignored `.dev.vars` or another non-versioned secret store.
 
-Unresolved items include TiDB-specific Hyperdrive compatibility, TLS/auth plugin
+Unresolved items include future Hyperdrive compatibility, TLS/auth plugin
 validation, transaction and prepared-statement behavior, query-cache policy,
 connection/concurrency limits, request cancellation, and full application route
 lifecycle tests. No migration, schema mutation, table operation, or data copy was
@@ -228,7 +244,7 @@ The preview Worker exposes two diagnostic routes:
 - `GET /api/health` returns `{ "status": "ok" }` with HTTP 200 and does not
   initialize or query the database.
 - `GET /api/internal/db-health` remains hidden behind the `DB_HEALTH_TOKEN`
-  bearer secret. It creates a request-scoped Hyperdrive/mysql2 connection, wraps
+  bearer secret. It creates a request-scoped direct mysql2 connection, wraps
   it with the existing Drizzle MySQL adapter, executes only `SELECT 1`, and closes
   the logical connection in `finally`. Responses contain no database metadata or
   error details.
@@ -245,13 +261,15 @@ for `/api/*` and `/manus-storage/*`, keeping API failures out of the SPA fallbac
 ### Preview deployment checklist (manual; not executed in this phase)
 
 - [ ] Create a preview-only Cloudflare Worker.
-- [ ] Create a Hyperdrive configuration for the existing MySQL/TiDB database.
 - [ ] Create a least-privilege preview database credential.
+- [ ] Configure preview `DB_HOST`, `DB_PORT`, and `DB_NAME` variables.
+- [ ] Register `DB_USER` and `DB_PASSWORD` as Worker secrets.
 - [ ] Create a preview-only R2 bucket.
-- [ ] Replace the preview Hyperdrive and R2 placeholders outside committed secrets.
+- [ ] Replace the preview R2 placeholders outside committed secrets.
 - [ ] Register `DB_HEALTH_TOKEN` as a Worker secret.
 - [ ] Register required non-secret vars: `APP_ENV=preview`,
-      `DATABASE_PROVIDER=hyperdrive`, and `STORAGE_PROVIDER=r2`.
+      `DATABASE_PROVIDER=direct-mysql`, `DB_HOST`, `DB_PORT`, `DB_NAME`, and
+      `STORAGE_PROVIDER=r2`.
 - [ ] Install dependencies with the repository's supported npm/pnpm version.
 - [ ] Run the TypeScript checks and existing tests.
 - [ ] Build the React assets into `dist/public`.

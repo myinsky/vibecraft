@@ -9,7 +9,8 @@
   "vars": {
     "APP_ENV": "preview",
     "STORAGE_PROVIDER": "r2",
-    "DATABASE_PROVIDER": "hyperdrive"
+    "DATABASE_PROVIDER": "direct-mysql",
+    "DB_PORT": "4000"
   },
   "assets": {
     "directory": "./dist/public",
@@ -17,12 +18,9 @@
     "not_found_handling": "single-page-application",
     "run_worker_first": ["/api/*", "/manus-storage/*"]
   },
-  "hyperdrive": [
-    {
-      "binding": "HYPERDRIVE",
-      "id": "REPLACE_WITH_PREVIEW_HYPERDRIVE_ID"
-    }
-  ],
+  // Direct MySQL bindings: configure DB_HOST and DB_NAME as environment-specific
+  // vars. Store DB_USER and DB_PASSWORD with `wrangler secret put`; never commit
+  // their values. Hyperdrive is an optional fallback and has no required binding.
   "r2_buckets": [
     {
       "binding": "R2_BUCKET",

@@ -17,12 +17,17 @@ interface AssetFetcher {
 
 interface Env {
   ASSETS: AssetFetcher;
-  HYPERDRIVE: HyperdriveBinding;
+  HYPERDRIVE?: HyperdriveBinding;
   R2_BUCKET: R2BucketBinding;
   APP_ENV: "preview" | "production";
   STORAGE_PROVIDER: "forge" | "r2";
   DATABASE_PROVIDER: DatabaseProviderName;
   DB_HEALTH_TOKEN?: string;
+  DB_HOST?: string;
+  DB_PORT?: string;
+  DB_USER?: string;
+  DB_PASSWORD?: string;
+  DB_NAME?: string;
   DATABASE_URL?: string;
   JWT_SECRET?: string;
   OAUTH_SERVER_URL?: string;
@@ -58,7 +63,15 @@ const worker = {
 
     configureRuntimeEnv(env as unknown as RuntimeEnv);
     configureStorageBindings({ R2_BUCKET: env.R2_BUCKET }, env.STORAGE_PROVIDER);
-    configureDatabaseBindings({ HYPERDRIVE: env.HYPERDRIVE }, env.DATABASE_PROVIDER);
+    const databaseBindings = {
+      HYPERDRIVE: env.HYPERDRIVE,
+      DB_HOST: env.DB_HOST,
+      DB_PORT: env.DB_PORT,
+      DB_USER: env.DB_USER,
+      DB_PASSWORD: env.DB_PASSWORD,
+      DB_NAME: env.DB_NAME,
+    };
+    configureDatabaseBindings(databaseBindings, env.DATABASE_PROVIDER);
 
     if (pathname === "/api/internal/db-health" && request.method === "GET") {
       const expected = env.DB_HEALTH_TOKEN;
@@ -67,7 +80,10 @@ const worker = {
         return new Response("Not found", { status: 404 });
       }
       try {
-        const healthy = await checkDatabaseConnection();
+        const healthy = await checkDatabaseConnection({
+          bindings: databaseBindings,
+          provider: env.DATABASE_PROVIDER,
+        });
         return Response.json(
           { status: healthy ? "ok" : "unavailable", provider: env.DATABASE_PROVIDER },
           { status: healthy ? 200 : 503, headers: { "Cache-Control": "no-store" } },
