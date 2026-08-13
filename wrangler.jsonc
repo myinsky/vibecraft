@@ -10,7 +10,9 @@
     "APP_ENV": "preview",
     "STORAGE_PROVIDER": "r2",
     "DATABASE_PROVIDER": "direct-mysql",
-    "DB_PORT": "4000"
+    "DB_PORT": "4000",
+    "DB_HOST": "gateway01.ap-northeast-1.prod.aws.tidbcloud.com",
+    "DB_NAME": "vibecraft_preview"
   },
   "assets": {
     "directory": "./dist/public",
