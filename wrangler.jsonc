@@ -24,7 +24,7 @@
   "vars": {
     "APP_ENV": "preview",
     "STORAGE_PROVIDER": "r2",
-    "DATABASE_PROVIDER": "direct-mysql",
+    "DATABASE_PROVIDER": "hyperdrive",
     "DB_PORT": "4000",
     "DB_HOST": "gateway01.ap-northeast-1.prod.aws.tidbcloud.com",
     "DB_NAME": "vibecraft_preview"
@@ -35,9 +35,14 @@
     "not_found_handling": "single-page-application",
     "run_worker_first": ["/api/*", "/manus-storage/*"]
   },
-  // Direct MySQL bindings: configure DB_HOST and DB_NAME as environment-specific
-  // vars. Store DB_USER and DB_PASSWORD with `wrangler secret put`; never commit
-  // their values. Hyperdrive is an optional fallback and has no required binding.
+  // Direct MySQL vars remain available as an inactive fallback. Store DB_USER and
+  // DB_PASSWORD with `wrangler secret put`; never commit their values.
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      "id": "52fc752b92c24f60b50473f3a5c59c68"
+    }
+  ],
   "r2_buckets": [
     {
       "binding": "R2_BUCKET",
