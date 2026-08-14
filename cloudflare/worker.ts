@@ -49,6 +49,22 @@ function notImplemented(): Response {
   );
 }
 
+function getDatabaseErrorMetadata(error: unknown): { name: string; code: string } {
+  const name = error instanceof Error && error.name ? error.name : "UnknownError";
+  let code = "UNKNOWN";
+  try {
+    if (typeof error === "object" && error !== null && "code" in error) {
+      const candidate = error.code;
+      if (typeof candidate === "string" || typeof candidate === "number") {
+        code = String(candidate);
+      }
+    }
+  } catch {
+    // Treat unusual error objects (for example, throwing getters) as unknown.
+  }
+  return { name, code };
+}
+
 const worker = {
   async fetch(request: Request, env: Env): Promise<Response> {
     const { pathname } = new URL(request.url);
@@ -91,7 +107,11 @@ const worker = {
       } catch (error) {
         console.error("[DB health] connection failed", error);
         return Response.json(
-          { status: "unavailable", provider: env.DATABASE_PROVIDER },
+          {
+            status: "unavailable",
+            provider: env.DATABASE_PROVIDER,
+            error: getDatabaseErrorMetadata(error),
+          },
           { status: 503, headers: { "Cache-Control": "no-store" } },
         );
       }
