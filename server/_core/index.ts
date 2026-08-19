@@ -24,6 +24,7 @@ import { registerVibecraftImageProxy } from "../vibecraft-image-proxy";
 import { registerKakaoSdkProxy } from "../kakao-sdk-proxy";
 import { registerPageHtmlServeRoute } from "../page-html-serve";
 import { registerApiProxyRoutes } from "../api-proxy";
+import { registerFullDataExportRoute } from "../full-data-export";
 import { getSiteConfigAll, getLatestPosts, getHomeSections, getNavItemsFromDb } from "../db";
 
 /**
@@ -123,6 +124,7 @@ const BUILD_HASH = getRuntimeEnv("BUILD_HASH") || `dev-${Date.now().toString(36)
   registerKakaoSdkProxy(app);
   registerPageHtmlServeRoute(app);
   registerApiProxyRoutes(app);
+  registerFullDataExportRoute(app);
   // tRPC API
   app.use(
     "/api/trpc",
